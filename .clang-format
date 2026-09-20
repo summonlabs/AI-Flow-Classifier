@@ -1,0 +1,19 @@
+# AI Flow Classifier house style.  Enforced by review, not by CI, because the
+# project does not depend on a formatting tool being installed.
+BasedOnStyle: LLVM
+Language: Cpp
+Standard: c++20
+IndentWidth: 2
+ColumnLimit: 100
+AccessModifierOffset: -1
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AlwaysBreakTemplateDeclarations: Yes
+BreakBeforeBraces: Attach
+ConstructorInitializerIndentWidth: 2
+DerivePointerAlignment: false
+IncludeBlocks: Preserve
+PointerAlignment: Left
+SortIncludes: Never
+SpaceAfterTemplateKeyword: true

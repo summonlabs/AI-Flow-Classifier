@@ -1,0 +1,16 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+set(AI_Flow_Classifier_VERSION "@PROJECT_VERSION@")
+
+if(NOT TARGET AIFlowClassifier::ai_flow_classifier)
+  include("${CMAKE_CURRENT_LIST_DIR}/AIFlowClassifierTargets.cmake")
+endif()
+
+# Threads is the only transitive dependency of the runtime; it is found here so
+# that a consumer does not have to know about it.
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_dependency(Threads)
+
+check_required_components(AI_Flow_Classifier)

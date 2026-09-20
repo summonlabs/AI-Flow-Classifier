@@ -1,0 +1,52 @@
+# Build trees
+/build/
+/build-*/
+/out/
+/_build/
+CMakeCache.txt
+CMakeFiles/
+CTestTestfile.cmake
+cmake_install.cmake
+install_manifest.txt
+*.sln
+*.vcxproj
+*.vcxproj.*
+*.xcodeproj/
+compile_commands.json
+.ninja_deps
+.ninja_log
+build.ninja
+rules.ninja
+
+# Binary artifacts
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.dylib
+*.dll
+*.exe
+*.pdb
+*.ilk
+*.exp
+*.idb
+*.map
+
+# Test and runtime debris
+Testing/
+*.log
+*.tmp
+*.swp
+
+# Editor and OS noise
+.vs/
+.vscode/
+.idea/
+.cache/
+*.user
+Thumbs.db
+.DS_Store
+
+# Local scratch space used by manual validation runs only
+/.scratch/

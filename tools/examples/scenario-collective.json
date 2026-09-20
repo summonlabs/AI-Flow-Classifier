@@ -1,0 +1,41 @@
+{
+  "policy_path": "tools/examples/policy-strict.json",
+  "steps": [
+    {
+      "action": "register_publisher",
+      "publisher": "trainer-node-0",
+      "boot": 1,
+      "session": "session-trainer-node-0",
+      "source": "DECLARED_AUTHENTICATED"
+    },
+    {
+      "action": "register_flow",
+      "flow_key": "TCP/10.0.0.1:40001->10.0.0.2:29500"
+    },
+    {
+      "action": "publish_evidence",
+      "publisher": "trainer-node-0",
+      "flow_key": "TCP/10.0.0.1:40001->10.0.0.2:29500",
+      "semantic_class": "COLLECTIVE",
+      "evidence_generation": 1,
+      "topic": "rank0.collective",
+      "freshness_window": 60000
+    },
+    {
+      "action": "classify",
+      "flow_key": "TCP/10.0.0.1:40001->10.0.0.2:29500"
+    },
+    {
+      "action": "classify",
+      "flow_key": "TCP/10.0.0.1:40001->10.0.0.2:29500"
+    },
+    {
+      "action": "end_session",
+      "publisher": "trainer-node-0"
+    },
+    {
+      "action": "classify",
+      "flow_key": "TCP/10.0.0.1:40001->10.0.0.2:29500"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "generation": 1,
+  "allow_heuristic_evidence": false,
+  "default_freshness_window": 60000,
+  "contradiction_penalty": 2000,
+  "minimum_publishable_confidence": 1000,
+  "max_evidence_considered": 16,
+  "heuristic_adapters": [],
+  "port_hints": []
+}

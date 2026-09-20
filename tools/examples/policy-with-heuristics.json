@@ -1,0 +1,14 @@
+{
+  "generation": 1,
+  "allow_heuristic_evidence": true,
+  "default_freshness_window": 60000,
+  "contradiction_penalty": 2500,
+  "minimum_publishable_confidence": 1000,
+  "max_evidence_considered": 16,
+  "heuristic_adapters": [
+    { "name": "port-hint", "enabled": true, "max_basis_points": 2000, "priority": 1 }
+  ],
+  "port_hints": [
+    { "transport": "TCP", "port": 29500, "semantic_class": "INFERENCE_REQUEST", "basis_points": 1500, "adapter": "port-hint" }
+  ]
+}
