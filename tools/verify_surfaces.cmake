@@ -59,18 +59,31 @@ endif()
 list(LENGTH REQUIRED_SURFACES COUNT)
 message(STATUS "all ${COUNT} proof surfaces are present")
 
-# Repository hygiene gates that belong to the same check: nothing generated, nothing
-# machine specific and nothing that looks like a secret may be committed.
-# Patterns are assembled from fragments so that this file does not contain the very strings it
-# forbids -- a hygiene check that fails on itself is worse than no check, because the natural response
-# is to weaken it.
-set(_drive_e "E:")
-set(_drive_c "C:")
-set(FORBIDDEN_PATTERNS
-  "${_drive_e}/The Journey"
-  "${_drive_e}:\\\\The Journey"
-  "${_drive_c}:/Users/"
-  "${_drive_c}:\\\\Users\\\\")
+# Repository hygiene gate that belongs to the same check: no committed source may
+# name an absolute path on the machine that produced it.
+#
+# The detector is deliberately generic rather than a list of remembered bad strings:
+# it matches any Windows drive-absolute path and then accepts only the
+# machine-independent roots a portable source tree is allowed to name. A user
+# profile directory is never in that list, so no account name has to be written
+# down here -- the check cannot leak the very thing it forbids, and it keeps
+# working on a machine whose paths this file has never seen.
+set(ALLOWED_ABSOLUTE_ROOTS
+  Windows
+  "Program Files"
+  "Program Files (x86)"
+  ProgramData
+  Temp
+  CMake
+  cmake)
+
+# A drive-absolute path, preceded by a non-alphanumeric boundary so that the "s" of
+# an https URL is not mistaken for a drive letter. The first path component is the
+# only part a portable tree may name.
+set(ABSOLUTE_PATH_PATTERN [=[[^A-Za-z0-9][A-Za-z]:[\\/]+[A-Za-z0-9_.][A-Za-z0-9_. -]*]=])
+
+# A POSIX user home directory: the two conventional account roots.
+set(USER_HOME_PATH_PATTERN [=[/(home|Users)/[A-Za-z0-9_.-]+]=])
 
 file(GLOB_RECURSE TRACKED_FILES
   RELATIVE "${SOURCE_DIR}"
@@ -85,11 +98,22 @@ file(GLOB_RECURSE TRACKED_FILES
 set(VIOLATIONS "")
 foreach(file IN LISTS TRACKED_FILES)
   file(READ "${SOURCE_DIR}/${file}" CONTENT)
-  foreach(pattern IN LISTS FORBIDDEN_PATTERNS)
-    if(CONTENT MATCHES "${pattern}")
-      list(APPEND VIOLATIONS "${file} matches '${pattern}'")
+
+  string(REGEX MATCHALL "${ABSOLUTE_PATH_PATTERN}" ABSOLUTE_MATCHES "${CONTENT}")
+  foreach(match IN LISTS ABSOLUTE_MATCHES)
+    # Strip the boundary character and the drive prefix, then keep everything up to
+    # the next separator: that first component decides whether the path is allowed.
+    string(REGEX REPLACE [=[^[^A-Za-z0-9][A-Za-z]:[\\/]+]=] "" ROOT_COMPONENT "${match}")
+    string(REGEX REPLACE [=[[\\/].*$]=] "" ROOT_COMPONENT "${ROOT_COMPONENT}")
+    list(FIND ALLOWED_ABSOLUTE_ROOTS "${ROOT_COMPONENT}" ROOT_INDEX)
+    if(ROOT_INDEX EQUAL -1)
+      list(APPEND VIOLATIONS "${file}: absolute local path '${match}'")
     endif()
   endforeach()
+
+  if(CONTENT MATCHES "${USER_HOME_PATH_PATTERN}")
+    list(APPEND VIOLATIONS "${file}: user home path '${CMAKE_MATCH_0}'")
+  endif()
 endforeach()
 
 if(VIOLATIONS)
@@ -139,4 +163,3 @@ foreach(required_phrase
   endif()
 endforeach()
 message(STATUS "LICENSE contains the full Apache License 2.0 text")
-
