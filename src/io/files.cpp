@@ -399,13 +399,29 @@ Status atomic_replace(std::string_view path, const std::uint8_t* data, std::size
     (void)remove_file(temporary);
     return Status::failure(ErrorCode::INVALID_ARGUMENT, "path is not valid UTF-8");
   }
-  if (::MoveFileExW(wide_temporary.c_str(), wide_destination.c_str(),
-                    MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) == 0) {
+  // While a reader has the destination open (an inspection, an antivirus or
+  // indexing scan) the replacement fails until the reader closes the file, so
+  // it is retried for a bounded time (about 2 s) instead of failing the write.
+  // A directory in the way is not transient and fails at once.
+  for (int attempt = 0;; ++attempt) {
+    if (::MoveFileExW(wide_temporary.c_str(), wide_destination.c_str(),
+                      MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) != 0) {
+      break;
+    }
     const unsigned long error = ::GetLastError();
-    (void)remove_file(temporary);
-    return Status::failure(ErrorCode::DURABILITY_FAILURE,
-                           "MoveFileEx failed for " + destination + ": " +
-                               last_error_text(error));
+    const DWORD attributes = ::GetFileAttributesW(wide_destination.c_str());
+    const bool directory =
+        attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
+    const bool transient = (error == ERROR_ACCESS_DENIED || error == ERROR_SHARING_VIOLATION ||
+                            error == ERROR_LOCK_VIOLATION) &&
+                           !directory;
+    if (!transient || attempt >= 100) {
+      (void)remove_file(temporary);
+      return Status::failure(ErrorCode::DURABILITY_FAILURE,
+                             "MoveFileEx failed for " + destination + ": " +
+                                 last_error_text(error));
+    }
+    ::Sleep(20);
   }
   return Status::success();
 #else

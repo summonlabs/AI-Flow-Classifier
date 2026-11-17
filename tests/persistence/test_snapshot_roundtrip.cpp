@@ -19,9 +19,12 @@
 // sequence high-water mark, the written-at stamp) cannot escape notice by living outside
 // every per-record comparison.
 
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <fstream>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include "ai_flow_classifier/ai_flow_classifier.hpp"
@@ -660,5 +663,35 @@ AIFC_TEST("snapshot roundtrip: writing is atomic and leaves no temporary behind"
   AIFC_CHECK_OK(entries_after);
   if (entries_after) {
     AIFC_CHECK_EQ(entries_after.value().size(), std::size_t{1});
+  }
+}
+
+AIFC_TEST("snapshot roundtrip: an atomic replace waits for a reader to close") {
+  aifc_test::ScratchDirectory scratch("roundtrip-reader");
+  const std::string path = scratch.file("coordinator.aifs");
+  const std::string first = "FIRST";
+  const std::string second = "SECOND";
+  AIFC_CHECK_OK(aifc::atomic_replace(path, reinterpret_cast<const std::uint8_t*>(first.data()), first.size()));
+  bool reader_opened = false;
+  bool replaced = false;
+  {
+    // Another tool reading the state (an inspection, a scan) holds the snapshot
+    // open while it is replaced, and closes it shortly after.
+    std::ifstream reader(path, std::ios::binary);
+    reader_opened = reader.is_open();
+    std::thread writer([&path, &second, &replaced] {
+      replaced = aifc::atomic_replace(path, reinterpret_cast<const std::uint8_t*>(second.data()), second.size()).ok();
+    });
+    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    reader.close();
+    writer.join();
+  }
+  AIFC_CHECK(reader_opened);
+  // The write is not lost because a reader had the snapshot open for a moment.
+  AIFC_CHECK(replaced);
+  auto stored = aifc::read_all(path, 64);
+  AIFC_CHECK_OK(stored);
+  if (stored) {
+    AIFC_CHECK(std::string(reinterpret_cast<const char*>(stored.value().data()), stored.value().size()) == second);
   }
 }

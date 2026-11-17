@@ -158,10 +158,12 @@ int run_all(int argc, char** argv);
     }                                                                                     \
   } while (false)
 
+// The operands are copied: a reference to a member of a temporary (for example
+// result().value().field) would dangle once the declaration ends.
 #define AIFC_CHECK_EQ(left, right)                                                        \
   do {                                                                                    \
-    const auto& aifc_left = (left);                                                       \
-    const auto& aifc_right = (right);                                                     \
+    auto aifc_left = (left);                                                              \
+    auto aifc_right = (right);                                                            \
     if (!(aifc_left == aifc_right)) {                                                     \
       std::ostringstream aifc_stream;                                                     \
       aifc_stream << "CHECK_EQ failed: " #left " == " #right "\n      left  = "          \
@@ -173,8 +175,8 @@ int run_all(int argc, char** argv);
 
 #define AIFC_CHECK_NE(left, right)                                                        \
   do {                                                                                    \
-    const auto& aifc_left = (left);                                                       \
-    const auto& aifc_right = (right);                                                     \
+    auto aifc_left = (left);                                                              \
+    auto aifc_right = (right);                                                            \
     if (aifc_left == aifc_right) {                                                        \
       std::ostringstream aifc_stream;                                                     \
       aifc_stream << "CHECK_NE failed: " #left " != " #right " (both "                    \

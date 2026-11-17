@@ -133,6 +133,12 @@ if(AIFC_ENABLE_SANITIZERS OR AIFC_ENABLE_TSAN)
     message(STATUS "sanitizers            : SUPPORTED (${AIFC_SANITIZER_FLAGS})")
     target_compile_options(ai_flow_classifier PUBLIC ${AIFC_SANITIZER_FLAGS})
     target_link_options(ai_flow_classifier PUBLIC ${AIFC_SANITIZER_FLAGS})
+    if(MSVC)
+      # Debug information is required: without it MSVC warns C5072, which /WX
+      # turns into an error, so the sanitized build did not compile.
+      target_compile_options(ai_flow_classifier PUBLIC /Zi)
+      target_link_options(ai_flow_classifier PUBLIC /INCREMENTAL:NO /DEBUG)
+    endif()
   else()
     message(STATUS "sanitizers            : UNSUPPORTED on this toolchain (probe failed); no sanitizer flags added")
   endif()

@@ -452,8 +452,15 @@ Result<TcpListener> TcpListener::listen_loopback(std::uint16_t port, std::uint32
   const NativeSocket handle = to_native(listener.socket_.native_handle());
 
   const int reuse = 1;
+#if defined(AIFC_PLATFORM_WINDOWS)
+  // SO_REUSEADDR on Windows lets a second socket bind a port that is still
+  // listening; exclusive use makes that second bind fail instead.
+  (void)::setsockopt(handle, SOL_SOCKET, SO_EXCLUSIVEADDRUSE, reinterpret_cast<const char*>(&reuse),
+                     sizeof(reuse));
+#else
   (void)::setsockopt(handle, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const char*>(&reuse),
                      sizeof(reuse));
+#endif
 
   sockaddr_in address{};
   address.sin_family = AF_INET;

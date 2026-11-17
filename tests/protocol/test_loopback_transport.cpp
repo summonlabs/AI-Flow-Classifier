@@ -392,3 +392,14 @@ AIFC_TEST("loopback transport: many sequential connections are served and accoun
   AIFC_CHECK_EQ(stats.queued, std::size_t{0});
   AIFC_CHECK(stats.accepted >= kConnections);
 }
+
+AIFC_TEST("loopback transport: a second listener cannot take a listening port") {
+  auto first = aifc::TcpListener::listen_loopback(0, 4);
+  AIFC_CHECK_OK(first);
+  if (!first) {
+    return;
+  }
+  auto second = aifc::TcpListener::listen_loopback(first.value().port(), 4);
+  // Two coordinators must never share one listening port: the second bind fails.
+  AIFC_CHECK(!second.ok());
+}
